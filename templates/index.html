@@ -12,3 +12,26 @@
     </form>
 </body>
 </html>
+<script>
+    document.getElementById("upload").addEventListener("change", async function() {
+        const file = this.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+    
+        const res = await fetch("http://localhost:8000/upload/", {
+            method: "POST",
+            body: formData
+        });
+    
+        const json = await res.json();
+        const share1Url = `data:${json.share1.mime};base64,${json.share1.data}`;
+        const share2Url = `data:${json.share2.mime};base64,${json.share2.data}`;
+    
+        document.getElementById("output").innerHTML = `
+            <h3>Share 1</h3>
+            <img src="${share1Url}" width="300"/><br/>
+            <h3>Share 2</h3>
+            <img src="${share2Url}" width="300"/>
+        `;
+    });
+    </script>

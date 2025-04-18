@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenCV + FastAPI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h2>Upload Image</h2>
+    <form action="/merge/" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required>
+        <input type="file" name="file1" accept="image/*" required>
+        <button type="submit">Process</button>
+    </form>
+</body>
+</html>
