@@ -16,34 +16,34 @@ def process_image(file: UploadFile) -> Tuple[bytes, str]:
     return processed_img.tobytes(), "image/jpeg"
 
 
-def process_image2(file1: UploadFile) -> Tuple[Tuple[bytes, str], Tuple[bytes, str]]:
-    # Baca isi file dan decode sebagai gambar OpenCV
+def process_image2(file1: UploadFile, block_size: int = 4) -> Tuple[Tuple[bytes, str], Tuple[bytes, str]]:
     contents = file1.file.read()
     np_arr = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(np_arr, cv2.IMREAD_GRAYSCALE)
 
-    # Ubah ke citra biner (hitam-putih)
     _, bw_img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
-    # Ukuran agar genap
     h, w = bw_img.shape
     if h % 2 != 0: h -= 1
     if w % 2 != 0: w -= 1
     bw_img = bw_img[:h, :w]
 
-    # Inisialisasi dua share kosong (dua kali ukuran)
-    share1 = np.zeros((h*2, w*2), dtype=np.uint8)
-    share2 = np.zeros((h*2, w*2), dtype=np.uint8)
+    out_h = h * block_size
+    out_w = w * block_size
+    share1 = np.zeros((out_h, out_w, 4), dtype=np.uint8)
+    share2 = np.zeros((out_h, out_w, 4), dtype=np.uint8)
 
-    # Pola untuk encoding
     patterns = {
-        "white": [np.array([[255, 0], [0, 255]], dtype=np.uint8),
-                  np.array([[0, 255], [255, 0]], dtype=np.uint8)],
-        "black": [np.array([[255, 0], [0, 255]], dtype=np.uint8),
-                  np.array([[255, 0], [0, 255]], dtype=np.uint8)]
-    }
+    "black": [
+        np.array([[255, 0], [0, 255]], dtype=np.uint8),
+        np.array([[0, 255], [255, 0]], dtype=np.uint8)
+    ],
+    "white": [
+        np.array([[255, 0], [0, 255]], dtype=np.uint8),
+        np.array([[255, 0], [0, 255]], dtype=np.uint8)
+    ]
+}
 
-    # Buat dua share
     for i in range(h):
         for j in range(w):
             pixel = bw_img[i, j]
@@ -51,39 +51,54 @@ def process_image2(file1: UploadFile) -> Tuple[Tuple[bytes, str], Tuple[bytes, s
 
             idx = np.random.randint(0, 2)
             p1 = patterns[pattern_type][idx]
-            p2 = patterns[pattern_type][1 - idx if pattern_type == "white" else idx]
+            p2 = patterns[pattern_type][1 - idx if pattern_type == "black" else idx]
 
-            share1[i*2:i*2+2, j*2:j*2+2] = p1
-            share2[i*2:i*2+2, j*2:j*2+2] = p2
+            for dy in range(2):
+                for dx in range(2):
+                    y = i * block_size + dy * (block_size // 2)
+                    x = j * block_size + dx * (block_size // 2)
+                    alpha1 = 0 if p1[dy, dx] == 0 else 255
+                    alpha2 = 0 if p2[dy, dx] == 0 else 255
+                    share1[y:y+(block_size//2), x:x+(block_size//2)] = [0, 0, 0, alpha1]
+                    share2[y:y+(block_size//2), x:x+(block_size//2)] = [0, 0, 0, alpha2]
 
-    # Encode ke JPEG
-    _, encoded_share1 = cv2.imencode('.jpg', share1)
-    _, encoded_share2 = cv2.imencode('.jpg', share2)
+    _, encoded_share1 = cv2.imencode('.png', share1)
+    _, encoded_share2 = cv2.imencode('.png', share2)
 
     return (
-        (encoded_share1.tobytes(), "image/jpeg"),
-        (encoded_share2.tobytes(), "image/jpeg")
+        (encoded_share1.tobytes(), "image/png"),
+        (encoded_share2.tobytes(), "image/png")
     )
 
 
-
 def reconstruct_from_shares(file1: UploadFile, file2: UploadFile) -> Tuple[bytes, str]:
-    # Baca kedua file sebagai gambar grayscale
     contents1 = file1.file.read()
     contents2 = file2.file.read()
-    img1 = cv2.imdecode(np.frombuffer(contents1, np.uint8), cv2.IMREAD_GRAYSCALE)
-    img2 = cv2.imdecode(np.frombuffer(contents2, np.uint8), cv2.IMREAD_GRAYSCALE)
+    img1 = cv2.imdecode(np.frombuffer(contents1, np.uint8), cv2.IMREAD_UNCHANGED)
+    img2 = cv2.imdecode(np.frombuffer(contents2, np.uint8), cv2.IMREAD_UNCHANGED)
 
-    # Cek ukuran sama
     if img1.shape != img2.shape:
         raise ValueError("Ukuran kedua share harus sama")
 
-    # Gabungkan menggunakan operasi bitwise OR
-    reconstructed = cv2.bitwise_or(img1, img2)
+    if img1.shape[2] == 4:
+        alpha1 = img1[:, :, 3]
+        alpha2 = img2[:, :, 3]
+    else:
+        alpha1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        alpha2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
-    # Encode ke JPEG
-    _, encoded = cv2.imencode('.jpg', reconstructed)
-    return encoded.tobytes(), "image/jpeg"
+    # XOR alpha channel untuk rekonstruksi
+    reconstructed_alpha1 = cv2.bitwise_xor(alpha1, alpha2)
+    reconstructed_alpha = reconstructed_alpha1
+
+    # Buat gambar RGBA hasil rekonstruksi
+    reconstructed = np.zeros((*reconstructed_alpha.shape, 4), dtype=np.uint8)
+    reconstructed[:, :, :3] = 0  # Hitam
+    reconstructed[:, :, 3] = reconstructed_alpha
+
+    _, encoded = cv2.imencode('.png', reconstructed)
+    return encoded.tobytes(), "image/png"
+
 
 
 def process_color_image(file: UploadFile) -> Tuple[Tuple[bytes, str], Tuple[bytes, str]]:
