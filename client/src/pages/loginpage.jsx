@@ -12,18 +12,17 @@ function LoginPage() {
 
     return (
         <div className="relative min-h-screen flex items-center justify-center px-4">
-  {/* Background image + overlay */}
-  <div className="absolute inset-0 bg-slate-950 bg-opacity-60"></div>
-  <div
-    className="absolute inset-0"
-    style={{
-      backgroundImage: `url(${backgroundImage})`,
+    {/* Background image + overlay */}
+    <div className="absolute inset-0 bg-slate-950 bg-opacity-60"></div>
+    <div
+      className="absolute inset-0"
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundPosition: 'center',
+      }}
+    >
       
-      backgroundPosition: 'center',
-    }}
-  >
-    
-  </div>
+    </div>
 
     {/* Konten utama */}
     <div className="relative z-10 w-full max-w-sm text-white text-center space-y-6">
@@ -51,6 +50,8 @@ function LoginPage() {
                     type="email"
                     className="flex-1 bg-transparent outline-none"
                     placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                 />
             </div>
             <div className="flex items-center">
@@ -58,6 +59,8 @@ function LoginPage() {
                     type="password"
                     className="flex-1 bg-transparent outline-none"
                     placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                 />
             </div>
         </div>
@@ -75,10 +78,10 @@ function LoginPage() {
           setTimeout(() => setLoading(false), 2000);
         }}
         disabled={loading}
-        className="w-full py-3 bg-blue-600 hover:bg-blue-700 transition rounded-lg font-semibold cursor-pointer"
+        className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 transition rounded-lg font-semibold cursor-pointer disabled:opacity-60"
         >
         {loading ? (
-          <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+          <svg className="flex items-center animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
           </svg>
@@ -92,7 +95,6 @@ function LoginPage() {
         <button
         onClick={() => {
           setLoadingQR(true);
-          // Simulasi proses scan QR
           setTimeout(() => setLoadingQR(false), 2000);
         }}
         disabled={loadingQR}
@@ -105,15 +107,16 @@ function LoginPage() {
           </svg>
         ) : (
           <>
-            <span>Scan QR</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none"
-              viewBox="0 0 24 24" stroke="currentColor">
+            <span className="align-middle">Scan QR</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="align-middle h-5 w-5 text-white " fill="none"
+              viewBox="0 5 20 " stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                 d="M3 4a1 1 0 011-1h3m4 0h3a1 1 0 011 1v3m0 4v3a1 1 0 01-1 1h-3m-4 0H4a1 1 0 01-1-1v-3m0-4V4" />
             </svg>
           </>
         )}
       </button>
+
     </div>
 </div>
 
