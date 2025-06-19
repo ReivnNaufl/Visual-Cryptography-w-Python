@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenCV + FastAPI</title>
+    <link rel="stylesheet" href="/style/style.css">
+</head>
+<body>
+    <h2>Upload Image</h2>
+    <form action="/merge/" method="post" enctype="multipart/form-data">
+        <!-- File Input 1 -->
+        <div class="input-container">
+            <input type="file" name="file" accept="image/*" required>
+            <div class="paste-option">or paste image here</div>
+            <div class="paste-preview"></div>
+        </div>
+
+        <br>
+        <br>
+        
+        <!-- File Input 2 -->
+        <div class="input-container">
+            <input type="file" name="file1" accept="image/*" required>
+            <div class="paste-option">or paste image here</div>
+            <div class="paste-preview"></div>
+        </div>
+        
+        <br>
+        
+        <button type="submit">Process</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        // Handle paste for both containers
+        document.querySelectorAll('.input-container').forEach(container => {
+            const pasteOption = container.querySelector('.paste-option');
+            const preview = container.querySelector('.paste-preview');
+            const fileInput = container.querySelector('input[type="file"]');
+            
+            // Show paste option when container is clicked
+            container.addEventListener('click', (e) => {
+                if (e.target === fileInput) return;
+                pasteOption.style.display = 'block';
+            });
+            
+            // Handle paste event
+            pasteOption.addEventListener('click', async () => {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const clipboardItem of clipboardItems) {
+                        for (const type of clipboardItem.types) {
+                            if (type.startsWith('image/')) {
+                                const blob = await clipboardItem.getType(type);
+                                const file = new File([blob], 'pasted-image.png', { type });
+                                
+                                // Create a preview
+                                const url = URL.createObjectURL(blob);
+                                preview.innerHTML = `<img src="${url}" style="max-width: 200px;">`;
+                                
+                                // Create a data transfer object to simulate file input
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                fileInput.files = dataTransfer.files;
+                                
+                                pasteOption.style.display = 'none';
+                                return;
+                            }
+                        }
+                    }
+                    alert('No image found in clipboard');
+                } catch (err) {
+                    console.error('Paste failed:', err);
+                    alert('Paste failed. Please make sure you have clipboard permissions.');
+                }
+            });
+        });
+    });
+    </script>
+
+</body>
+</html>
