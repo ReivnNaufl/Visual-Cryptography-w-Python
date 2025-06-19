@@ -3,7 +3,7 @@ import {useState, useEffect} from "react"
 
 import backgroundImage from "../assets/background_Star.png"
 
-function LoginPage() {
+function SignPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -120,4 +120,4 @@ function LoginPage() {
     );
 }
 
-export default LoginPage;
+export default SignPage;
