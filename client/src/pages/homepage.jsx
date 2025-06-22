@@ -109,20 +109,23 @@ function CreatedQRScreen() {
         <div className="space-y-3">
           {qrList.length > 0 ? (
             qrList.map((qrItem) => (
-              <div key={qrItem.id} className="bg-[#2b2b2b] rounded-xl p-3 flex justify-between items-center shadow-md">
+              <Link to={`/created/${qrItem.id}`} key={qrItem.id}>
+              <div className="bg-[#2b2b2b] rounded-xl p-3 flex justify-between items-center shadow-md hover:bg-gray-700 transition">
+                {/* ... sisa konten item list tidak berubah ... */}
                 <div className="flex gap-3 items-center">
                   <img 
-                    src={`data:image/png;base64,${qrItem.public_share}`} 
+                    src={qrItem.public_share ? `data:image/png;base64,${qrItem.public_share}` : qrIcon} 
                     alt={`QR for ${qrItem.metadata?.name}`} 
-                    className="w-10 h-10 object-contain bg-white" 
+                    className="w-10 h-10 object-contain bg-white p-1 rounded-md" 
                   />
                   <div>
-                    <h2 className="font-semibold">{qrItem.id || "Nama Tidak Ada"}</h2> 
+                    <h2 className="font-semibold">{qrItem.metadata?.name || "Nama Tidak Ada"}</h2>
+                    <p className="text-xs text-gray-400">ID: {qrItem.id}</p>
                   </div>
                 </div>
-                {/* Format timestamp menjadi tanggal yang mudah dibaca */}
-                 <p className="text-xs text-gray-400 whitespace-nowrap">{formatDate(qrItem.metadata?.timestamp)}</p>
+                <p className="text-xs text-gray-400 whitespace-nowrap">{formatDate(qrItem.metadata?.timestamp)}</p>
               </div>
+            </Link>
             ))
           ) : (
             <p className="text-center text-gray-400 mt-10">Anda belum membuat QR code.</p>

@@ -46,7 +46,7 @@ function App() {
           }
         />
         <Route
-          path="/created"
+          path="/created/:qrId"
           element={
             <ProtectedRoute>
               <CreatedQRScreenDetail />

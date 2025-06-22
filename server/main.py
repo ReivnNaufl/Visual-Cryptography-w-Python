@@ -171,3 +171,31 @@ async def get_qrs(user_id: str, current_user: dict = Depends(verify_firebase_tok
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Gagal mendapatkan QRs user: {e}"
         )
+    
+@app.get("/qr/{qr_id}")
+async def get_qr_detail(qr_id: str, current_user: dict = Depends(verify_firebase_token)):
+    """
+    Mengambil detail satu dokumen QR berdasarkan ID-nya.
+    """
+    try:
+        doc_ref = db.collection('QRs').document(qr_id).get()
+
+        if not doc_ref.exists:
+            raise HTTPException(status_code=404, detail="QR tidak ditemukan.")
+
+        qr_data = doc_ref.to_dict()
+
+        # Otorisasi: Pastikan hanya pemilik QR yang bisa melihat detailnya
+        if qr_data.get('userId') != current_user['uid']:
+            raise HTTPException(status_code=403, detail="Anda tidak punya izin untuk mengakses QR ini.")
+            
+        return qr_data
+
+    except Exception as e:
+        # Menangkap error dari HTTPException di atas dan error lainnya
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gagal mendapatkan detail QR: {str(e)}"
+        )
