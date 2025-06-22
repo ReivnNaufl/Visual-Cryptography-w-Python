@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from fastapi import UploadFile
 from typing import Tuple
+from app.util.image_processing import alpha_to_grayscale
 
 PATTERNS =  [
     # Checkered patterns (pair 0 and 1)
@@ -17,21 +18,7 @@ PATTERNS =  [
     np.array([[255, 255], [0, 0]], dtype=np.uint8)   # Horizontal Alternate
 ]
 
-
-# def process_image(file: UploadFile) -> Tuple[bytes, str]:
-#     # Convert to OpenCV image
-#     contents = file.file.read()
-#     np_arr = np.frombuffer(contents, np.uint8)
-#     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-#     # Simple OpenCV operation: convert to grayscale
-#     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#     _, processed_img = cv2.imencode('.jpg', gray)
-
-#     return processed_img.tobytes(), "image/jpeg"
-
-
-def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[Tuple[bytes, str], Tuple[bytes, str]]:
+def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[np.ndarray, Tuple[bytes, str], Tuple[bytes, str]]:
     _, bw_img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
     h, w = bw_img.shape
@@ -66,6 +53,7 @@ def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[Tuple[bytes, str]
     _, encoded_share2 = cv2.imencode('.png', share2)
 
     return (
+        alpha_to_grayscale(share1),
         (encoded_share1.tobytes(), "image/png"),
         (encoded_share2.tobytes(), "image/png")
     )
@@ -98,41 +86,3 @@ def reconstruct_shares(file1: UploadFile, file2: UploadFile) -> Tuple[bytes, str
 
     _, encoded = cv2.imencode('.png', reconstructed)
     return encoded.tobytes(), "image/png"
-
-
-
-# def process_color_image(file: UploadFile) -> Tuple[Tuple[bytes, str], Tuple[bytes, str]]:
-#     contents = file.file.read()
-#     np_arr = np.frombuffer(contents, np.uint8)
-#     img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-#     # Pastikan nilai pixel 8-bit
-#     img = img.astype(np.uint8)
-
-#     # Random noise sebagai share 1
-#     share1 = np.random.randint(0, 256, img.shape, dtype=np.uint8)
-
-#     # XOR gambar asli dengan share1 untuk mendapatkan share2
-#     share2 = cv2.bitwise_xor(img, share1)
-
-#     # Encode kedua share
-#     _, encoded1 = cv2.imencode('.png', share1)
-#     _, encoded2 = cv2.imencode('.png', share2)
-
-#     return (
-#         (encoded1.tobytes(), "image/png"),
-#         (encoded2.tobytes(), "image/png")
-#     )
-
-# def reconstruct_color_shares(file1: UploadFile, file2: UploadFile) -> Tuple[bytes, str]:
-#     contents1 = file1.file.read()
-#     contents2 = file2.file.read()
-
-#     img1 = cv2.imdecode(np.frombuffer(contents1, np.uint8), cv2.IMREAD_COLOR)
-#     img2 = cv2.imdecode(np.frombuffer(contents2, np.uint8), cv2.IMREAD_COLOR)
-
-#     # XOR kedua share
-#     reconstructed = cv2.bitwise_xor(img1, img2)
-
-#     _, encoded = cv2.imencode('.png', reconstructed)
-#     return encoded.tobytes(), "image/png"

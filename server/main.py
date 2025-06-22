@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.service.visual_cryptography import *
 from app.service.qr_operations import *
+from app.service.aruco_marker import *
 import io
 
 app = FastAPI()
@@ -27,14 +28,17 @@ async def index(request: Request):
 async def upload_image(request: Request,file: UploadFile = File(...)):
     img, found = reconstruct_qr(file)
     if found:
-        (share1_bytes, mime1), (share2_bytes, mime2) = split_share(img)
+        share1, (share1_bytes, mime1), (share2_bytes, mime2) = split_share(img)
         share1_base64 = base64.b64encode(share1_bytes).decode("utf-8")
         share2_base64 = base64.b64encode(share2_bytes).decode("utf-8")
+        aruco_bytes, mime_aruco = add_aruco_marker(share1)
+        aruco_base64 = base64.b64encode(aruco_bytes).decode("utf-8")
         
         return templates.TemplateResponse("result.html", {
             "request": request,
             "share1": f"data:{mime1};base64,{share1_base64}",
-            "share2": f"data:{mime2};base64,{share2_base64}"
+            "share2": f"data:{mime2};base64,{share2_base64}",
+            "aruco": f"data:{mime_aruco};base64,{aruco_base64}"
         })
     else:
         raise HTTPException(status_code=400, detail="QR Not Found")
