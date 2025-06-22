@@ -8,7 +8,7 @@ from firebase_admin import credentials, auth, initialize_app
 from dotenv import load_dotenv
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware # Penting untuk React
-
+from pydantic import BaseModel
 
 from app.service.visual_cryptography import *
 from app.service.qr_operations import *
@@ -125,3 +125,32 @@ async def reconstruct(file: UploadFile = File(...),file1: UploadFile = File(...)
         return StreamingResponse(io.BytesIO(image_bytes), media_type=mime)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+class StoreName(BaseModel):
+    name: str
+
+@app.post("/users/{user_id}/add-store")
+async def add_store_name_to_user(
+    user_id: str, 
+    store_data: StoreName,
+    current_user: dict = Depends(verify_firebase_token)
+):
+
+    if current_user['uid'] != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operasi tidak diizinkan. Anda hanya dapat menambahkan toko ke profil Anda sendiri."
+        )
+    try:
+        user_doc_ref = db.collection('users').document(user_id)
+        user_doc_ref.update({
+            'namaToko': firestore.ArrayUnion([store_data.name])
+        })
+        
+        return {"message": f"Toko '{store_data.name}' berhasil ditambahkan."}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Gagal menambahkan toko: {e}"
+        )
