@@ -18,7 +18,7 @@ PATTERNS =  [
     np.array([[255, 255], [0, 0]], dtype=np.uint8)   # Horizontal Alternate
 ]
 
-def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[np.ndarray, Tuple[bytes, str], Tuple[bytes, str]]:
+def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[np.ndarray, Tuple[bytes, str]]:
     _, bw_img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
     h, w = bw_img.shape
@@ -54,7 +54,6 @@ def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[np.ndarray, Tuple
 
     return (
         alpha_to_grayscale(share1),
-        (encoded_share1.tobytes(), "image/png"),
         (encoded_share2.tobytes(), "image/png")
     )
 

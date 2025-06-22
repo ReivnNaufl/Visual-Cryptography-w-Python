@@ -5,3 +5,6 @@ jinja2
 python-multipart
 pyzbar
 qrcode
+firebase_admin
+dotenv
+google-cloud-firestore

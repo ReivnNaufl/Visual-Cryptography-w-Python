@@ -9,7 +9,7 @@ width = 512
 height = 512
 SCALE_FACTOR = 3
 
-def add_aruco_marker(image: np.ndarray) -> Tuple[bytes, str]:
+def add_aruco_marker(image: np.ndarray) -> Tuple[bytes, str, str, str]:
     # Get original image dimensions
     height, width = image.shape[:2]
     marker_size = height // 5
@@ -48,7 +48,8 @@ def add_aruco_marker(image: np.ndarray) -> Tuple[bytes, str]:
     # Encode as grayscale PNG
     _, encoded_canvas = cv2.imencode('.png', resized)
 
-    return (encoded_canvas.tobytes(), "image/png")
+    return (encoded_canvas.tobytes(), "image/png", width, marker_size)
+   
 
 def extract_image_inside(warped_img, orig_width, border_px=100, debug=False):
     total_width = orig_width + 2 * border_px

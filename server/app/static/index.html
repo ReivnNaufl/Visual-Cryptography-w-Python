@@ -6,32 +6,51 @@
 </head>
 <body>
     <h2>Upload Image</h2>
-    <form action="/upload/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept="image/*" required>
-        <button type="submit">Process</button>
-    </form>
+    <input type="file" id="upload" accept="image/*" required>
+    <br>
+    <input type="text" id="name" placeholder="Enter name" required>
+    <br>
+    <input type="text" id="userId" placeholder="Enter User ID" required>
+    <button id="submitBtn">Process</button>
+
+    <div id="output"></div>
 </body>
 </html>
+
 <script>
-    document.getElementById("upload").addEventListener("change", async function() {
-        const file = this.files[0];
-        const formData = new FormData();
-        formData.append("file", file);
-    
-        const res = await fetch("http://localhost:8000/upload/", {
-            method: "POST",
-            body: formData
-        });
-    
-        const json = await res.json();
-        const share1Url = `data:${json.share1.mime};base64,${json.share1.data}`;
-        const share2Url = `data:${json.share2.mime};base64,${json.share2.data}`;
-    
-        document.getElementById("output").innerHTML = `
-            <h3>Share 1</h3>
-            <img src="${share1Url}" width="300"/><br/>
-            <h3>Share 2</h3>
-            <img src="${share2Url}" width="300"/>
-        `;
+document.getElementById("submitBtn").addEventListener("click", async function () {
+    const fileInput = document.getElementById("upload");
+    const nameInput = document.getElementById("name");
+    const userInput = document.getElementById("userId");
+
+    const file = fileInput.files[0];
+    const name = nameInput.value;
+    const user = userInput.value;
+
+    if (!file || !name) {
+        alert("Please select a file and enter a name.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", name);
+    formData.append("userId", user);
+
+    const res = await fetch("http://localhost:8000/upload/", {
+        method: "POST",
+        body: formData
     });
-    </script>
+
+    const json = await res.json();
+    const share1Url = `data:${json.share1.mime};base64,${json.share1.data}`;
+    const share2Url = `data:${json.share2.mime};base64,${json.share2.data}`;
+
+    document.getElementById("output").innerHTML = `
+        <h3>Share 1</h3>
+        <img src="${share1Url}" width="300"/><br/>
+        <h3>Share 2</h3>
+        <img src="${share2Url}" width="300"/>
+    `;
+});
+</script>
