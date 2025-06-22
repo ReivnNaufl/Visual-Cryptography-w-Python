@@ -155,14 +155,19 @@ async def add_store_name_to_user(
         )
     
 @app.get("/qr/user/{user_id}")
-async def get_qrs(user_id: str):
+async def get_qrs(user_id: str, current_user: dict = Depends(verify_firebase_token)):
+    if current_user['uid'] != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Operasi tidak diizinkan."
+        )
+    
     try:
-        qrs = get_user_qrs(user_id)
-
+        qrs = get_user_qrs(user_id) 
         return {"qrs": qrs}
     
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Gagal mendapatkan QRs user: {e}"
-        )    
+        )
