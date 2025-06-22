@@ -2,6 +2,7 @@ from google.cloud import firestore
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from google.cloud.firestore_v1 import FieldFilter
 
 current_dir = Path(__file__).parent
 env_path = current_dir.parent.parent / '.env'
@@ -40,3 +41,25 @@ def save_share_data(share1_b64: str, share2_b64: str, name: str, width: int, mar
         "path": doc_ref.path,
         "write_result": write_result
     }
+
+def get_user_qrs(userId: str, limit: int = 100) -> list:
+    query = (
+        db.collection('QRs')
+        .where(filter=FieldFilter("userId", "==", userId))
+        .order_by('metadata.timestamp')
+        .limit(limit)
+    )
+
+    docs = query.stream()
+    qrList = []
+
+    for doc in docs:
+        data = doc.to_dict()
+        qrList.append({
+            "id": doc.id,
+            "public_share": data.get("public_share"),
+            "metadata": data.get("metadata"),
+            "timestamp": data.get("timestamp")
+        })
+
+    return qrList

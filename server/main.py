@@ -110,7 +110,6 @@ async def upload_image(request: Request, file: UploadFile = File(...), name: str
         
         return templates.TemplateResponse("result.html", {
             "request": request,
-            "share1": f"data:{mime2};base64,{share2_base64}",
             "share2": f"data:{mime2};base64,{share2_base64}",
             "aruco": f"data:{mime_aruco};base64,{aruco_base64}"
         })
@@ -154,3 +153,16 @@ async def add_store_name_to_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Gagal menambahkan toko: {e}"
         )
+    
+@app.get("/qr/user/{user_id}")
+async def get_qrs(user_id: str):
+    try:
+        qrs = get_user_qrs(user_id)
+
+        return {"qrs": qrs}
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Gagal mendapatkan QRs user: {e}"
+        )    
