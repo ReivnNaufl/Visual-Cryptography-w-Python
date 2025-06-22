@@ -93,7 +93,7 @@ function LoginPage() {
             <h1 className="text-2xl font-bold">Account</h1>
             <p className="text-sm mt-2 text-gray-300">
                 Don’t have an account?{" "}
-                <a href="#" className="text-blue-400 hover:underline">
+                <a href="/signup" className="text-blue-400 hover:underline">
                     Sign Up
                 </a>
             </p>
