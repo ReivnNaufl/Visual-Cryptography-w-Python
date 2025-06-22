@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import {useState, useEffect} from "react"
+import { auth } from '../firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+
 
 import backgroundImage from "../assets/background_Star.png"
 
@@ -8,6 +11,59 @@ function LoginPage() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [loadingQR, setLoadingQR] = useState(false);
+    const [error, setError] = useState(null);
+
+    const navigate = useNavigate();
+
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      setError(null);
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // INI BAGIAN PENTING: Ambil ID Token
+        const idToken = await user.getIdToken();
+        //console.log("Login berhasil! Token ID:", idToken);
+
+        // Simpan token ini untuk digunakan dalam panggilan API
+        // Contoh: simpan di localStorage atau state management (Context/Redux)
+        localStorage.setItem('firebaseIdToken', idToken);
+
+        // Anda bisa memanggil API ke backend setelah ini
+        fetchProtectedData(idToken);
+        navigate("/home")
+
+      } catch (error) {
+        setError(error.message);
+        console.error("Error saat login:", error);
+      }
+    };
+
+      // Contoh fungsi untuk memanggil endpoint yang dilindungi
+    const fetchProtectedData = async (token) => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/protected', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Gagal mengambil data terproteksi');
+        }
+
+        const data = await response.json();
+        console.log("Data dari backend:", data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+
+
 
 
     return (
@@ -72,10 +128,9 @@ function LoginPage() {
 
         {/* Buttons */}
         <button
-        onClick={() => {
+        onClick={(e) => {
           setLoading(true);
-          // Simulasi async (misalnya login)
-          setTimeout(() => setLoading(false), 2000);
+          handleLogin(e).finally(() => setLoading(false));
         }}
         disabled={loading}
         className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 transition rounded-lg font-semibold cursor-pointer disabled:opacity-60"
@@ -108,11 +163,6 @@ function LoginPage() {
         ) : (
           <>
             <span className="align-middle">Scan QR</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="align-middle h-5 w-5 text-white " fill="none"
-              viewBox="0 5 20 " stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                d="M3 4a1 1 0 011-1h3m4 0h3a1 1 0 011 1v3m0 4v3a1 1 0 01-1 1h-3m-4 0H4a1 1 0 01-1-1v-3m0-4V4" />
-            </svg>
           </>
         )}
       </button>
