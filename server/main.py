@@ -1,6 +1,6 @@
 import os
 import base64
-from fastapi import FastAPI, File, HTTPException, UploadFile, Request, Depends, status, Form
+from fastapi import FastAPI, File, HTTPException, UploadFile, Request, Depends, status, Form, Query
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -174,9 +174,6 @@ async def get_qrs(user_id: str, current_user: dict = Depends(verify_firebase_tok
     
 @app.get("/qr/{qr_id}")
 async def get_qr_detail(qr_id: str, current_user: dict = Depends(verify_firebase_token)):
-    """
-    Mengambil detail satu dokumen QR berdasarkan ID-nya.
-    """
     try:
         doc_ref = db.collection('QRs').document(qr_id).get()
 
@@ -185,14 +182,12 @@ async def get_qr_detail(qr_id: str, current_user: dict = Depends(verify_firebase
 
         qr_data = doc_ref.to_dict()
 
-        # Otorisasi: Pastikan hanya pemilik QR yang bisa melihat detailnya
         if qr_data.get('userId') != current_user['uid']:
             raise HTTPException(status_code=403, detail="Anda tidak punya izin untuk mengakses QR ini.")
             
         return qr_data
 
     except Exception as e:
-        # Menangkap error dari HTTPException di atas dan error lainnya
         if isinstance(e, HTTPException):
             raise e
         raise HTTPException(
@@ -202,12 +197,7 @@ async def get_qr_detail(qr_id: str, current_user: dict = Depends(verify_firebase
 
 @app.delete("/qr/{qr_id}", status_code=status.HTTP_200_OK)
 async def delete_qr(qr_id: str, current_user: dict = Depends(verify_firebase_token)):
-    """
-    Menghapus dokumen QR dari koleksi 'QRs' DAN menghapus nama toko
-    terkait dari array 'namaToko' di dokumen pengguna.
-    """
     try:
-        # 1. Dapatkan dokumen QR yang akan dihapus untuk verifikasi pemilik
         qr_doc_ref = db.collection('QRs').document(qr_id)
         qr_doc = qr_doc_ref.get()
 
@@ -216,22 +206,16 @@ async def delete_qr(qr_id: str, current_user: dict = Depends(verify_firebase_tok
 
         qr_data = qr_doc.to_dict()
 
-        # 2. Otorisasi: Pastikan hanya pemilik yang bisa menghapus
         if qr_data.get('userId') != current_user['uid']:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Anda tidak memiliki izin untuk menghapus QR ini."
             )
 
-        # 3. Dapatkan nama toko dari metadata untuk dihapus dari array
         store_name_to_delete = qr_id
 
-        # === Lakukan Operasi Penghapusan ===
-
-        # 4. Hapus dokumen dari koleksi 'QRs'
         qr_doc_ref.delete()
 
-        # 5. Hapus nama toko dari array 'namaToko' di dokumen pengguna
         if store_name_to_delete:
             user_doc_ref = db.collection('users').document(current_user['uid'])
             user_doc_ref.update({
@@ -246,4 +230,41 @@ async def delete_qr(qr_id: str, current_user: dict = Depends(verify_firebase_tok
         raise HTTPException(
             status_code=500,
             detail=f"Gagal menghapus QR: {str(e)}"
+        )
+    
+@app.get("/public/search/stores")
+async def public_search_stores(name: str = Query(..., min_length=2)):
+    """
+    ENDPOINT PUBLIK: Mencari toko berdasarkan awalan nama.
+    Pencarian sekarang bersifat CASE-SENSITIVE.
+    """
+    try:
+        search_term = name
+        end_term = search_term + '\uf8ff'
+
+        query = (
+            db.collection('QRs')
+            .where(filter=FieldFilter("name", ">=", search_term))
+            .where(filter=FieldFilter("name", "<=", end_term))
+            .limit(10)
+        )
+        # -------------------------
+
+        docs = query.stream()
+        
+        results = []
+        for doc in docs:
+            data = doc.to_dict()
+            metadata = data.get("metadata", {})
+            results.append({
+                "id": doc.id,
+                "name": doc.id
+            })
+            
+        return {"results": results}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Gagal melakukan pencarian: {str(e)}"
         )

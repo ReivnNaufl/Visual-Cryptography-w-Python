@@ -22,15 +22,11 @@ function LoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // INI BAGIAN PENTING: Ambil ID Token
         const idToken = await user.getIdToken();
         //console.log("Login berhasil! Token ID:", idToken);
 
-        // Simpan token ini untuk digunakan dalam panggilan API
-        // Contoh: simpan di localStorage atau state management (Context/Redux)
         localStorage.setItem('firebaseIdToken', idToken);
 
-        // Anda bisa memanggil API ke backend setelah ini
         fetchProtectedData(idToken);
         navigate("/home")
 
@@ -40,7 +36,6 @@ function LoginPage() {
       }
     };
 
-      // Contoh fungsi untuk memanggil endpoint yang dilindungi
     const fetchProtectedData = async (token) => {
       try {
         const response = await fetch('http://127.0.0.1:8000/protected', {
@@ -56,7 +51,6 @@ function LoginPage() {
         }
 
         const data = await response.json();
-        console.log("Data dari backend:", data);
       } catch (error) {
         console.error(error);
       }
@@ -149,8 +143,7 @@ function LoginPage() {
 
         <button
         onClick={() => {
-          setLoadingQR(true);
-          setTimeout(() => setLoadingQR(false), 2000);
+          navigate("/searchtoko")
         }}
         disabled={loadingQR}
         className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 transition rounded-lg font-semibold cursor-pointer disabled:opacity-60"
