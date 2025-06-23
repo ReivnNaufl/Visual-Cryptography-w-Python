@@ -1,9 +1,9 @@
-import { ArrowLeft } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom"; // Impor useParams
-import { useState, useEffect } from "react"; // Impor useEffect
+import { ArrowLeft, Trash2 } from "lucide-react"; 
+import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import backgroundImage from "../assets/background_Star.png";
 import placeholderimg from "../assets/material-symbols_image.png";
-import { useAuth } from "../context/AuthContext"; // Impor untuk otentikasi
+import { useAuth } from "../context/AuthContext";
 
 function CreatedQRScreenDetail() {
   const navigate = useNavigate();
@@ -14,6 +14,8 @@ function CreatedQRScreenDetail() {
   const [qrData, setQrData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // 2. Gunakan useEffect untuk mengambil data detail berdasarkan qrId
   useEffect(() => {
@@ -46,6 +48,30 @@ function CreatedQRScreenDetail() {
 
     fetchQrDetail();
   }, [qrId, currentUser]); // Efek ini akan berjalan jika qrId atau currentUser berubah
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch(`http://127.0.0.1:8000/qr/${qrId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: "Gagal menghapus QR." }));
+        throw new Error(errorData.detail);
+      }
+      alert("QR berhasil dihapus.");
+      navigate("/home");
+    } catch (err) {
+      setError(err.message);
+      console.error("Error deleting QR:", err);
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false); // Tutup modal setelah selesai
+    }
+  };
 
   // Tampilkan loading & error state
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Loading...</div>;
@@ -94,12 +120,51 @@ function CreatedQRScreenDetail() {
         
         {/* Tombol Delete akan memerlukan fungsinya sendiri */}
         <button
-          onClick={() => alert(`Fungsi delete untuk QR ID: ${qrId} belum diimplementasikan.`)}
-          className="w-full py-3 rounded-lg bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold transition mt-5"
+          onClick={() => setIsDeleteModalOpen(true)}
+          className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 transition mt-5 flex items-center justify-center gap-2"
         >
-          Delete
+          <Trash2 className="h-5 w-5"/>
+          <span className="font-semibold">Delete</span>
         </button>
+
+
       </div>
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 px-4">
+          <div className="bg-slate-800 text-white p-6 rounded-lg shadow-xl w-full max-w-sm">
+            <h3 className="text-lg font-bold mb-2">Konfirmasi Penghapusan</h3>
+            <p className="mb-6 text-gray-300">
+              Apakah Anda yakin ingin menghapus toko <span className="font-bold">"{qrId}"</span>? Aksi ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-md transition disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="py-2 px-4 bg-red-600 hover:bg-red-700 rounded-md transition flex items-center justify-center disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Menghapus...
+                  </>
+                ) : (
+                  'Ya, Hapus'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

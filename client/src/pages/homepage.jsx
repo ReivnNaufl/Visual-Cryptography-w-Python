@@ -106,7 +106,7 @@ function CreatedQRScreen() {
         <h1 className="text-2xl font-bold mb-4">Created QR</h1>
 
         {/* 7. Ubah cara render list sesuai dengan struktur data dari API */}
-        <div className="space-y-3">
+        <div className="space-y-10">
           {qrList.length > 0 ? (
             qrList.map((qrItem) => (
               <Link to={`/created/${qrItem.id}`} key={qrItem.id}>
@@ -119,8 +119,7 @@ function CreatedQRScreen() {
                     className="w-10 h-10 object-contain bg-white p-1 rounded-md" 
                   />
                   <div>
-                    <h2 className="font-semibold">{qrItem.metadata?.name || "Nama Tidak Ada"}</h2>
-                    <p className="text-xs text-gray-400">ID: {qrItem.id}</p>
+                    <h2 className="font-semibold">{qrItem.id || "Nama Tidak Ada"}</h2>
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 whitespace-nowrap">{formatDate(qrItem.metadata?.timestamp)}</p>
