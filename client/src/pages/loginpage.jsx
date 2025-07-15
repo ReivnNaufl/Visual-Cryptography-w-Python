@@ -78,7 +78,7 @@ function LoginPage() {
     <div className="relative z-10 w-full max-w-sm text-white text-center space-y-6">
         {/* Logo bulat */}
         <div className="mx-auto w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center">
-            <div className="text-2xl font-bold">🔰</div>
+            <div className="text-2xl font-bold"></div>
         </div>
 
         {/* Heading */}
