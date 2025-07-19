@@ -9,6 +9,8 @@ import ScanQRScreen from "./pages/searchtoko";
 
 // Impor komponen ProtectedRoute
 import ProtectedRoute from "./components/ProtectedRoute";
+import ReconstructiveQrScanner from "./pages/test";
+import ScanQRPage from "./pages/scanpageprototype";
 
 function App() {
   return (
@@ -19,6 +21,10 @@ function App() {
         <Route path="/signup" element={<SignPage />} />
         {/* Kita asumsikan /searchtoko juga publik, jika harus login, bungkus juga */}
         <Route path="/searchtoko" element={<ScanQRScreen />} />
+
+        <Route path="/test" element={<ReconstructiveQrScanner/>} />
+
+        <Route path="/scancamera" element={<ScanQRPage/>}/>
 
         {/* --- Rute yang Dilindungi (Hanya untuk yang sudah login) --- */}
         <Route

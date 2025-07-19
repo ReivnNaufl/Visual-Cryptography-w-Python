@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware # Penting untuk React
 from pydantic import BaseModel
+
+from pyzbar.pyzbar import decode
 from app.service.visual_cryptography import *
 from app.route.websocker_route import *
 from app.service.qr_operations import *
@@ -273,4 +275,75 @@ async def public_search_stores(name: str = Query(..., min_length=2)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Gagal melakukan pencarian: {str(e)}"
+        )
+
+def analyze_qr_string_logic(qr_data: str) -> dict:
+    """
+    Menganalisis string data QR dan mengklasifikasikannya.
+    Mengembalikan dictionary dengan tipe dan konten.
+    """
+    if qr_data.startswith("http://") or qr_data.startswith("https://"):
+        return {"type": "URL", "content": qr_data}
+    elif qr_data.startswith("000201"):
+        return {"type": "QRIS", "content": qr_data}
+    else:
+        return {"type": "TEXT", "content": qr_data}
+
+
+def scan_qr_from_image(file1: UploadFile) -> Tuple[str, bool]:
+    """
+    Membaca file gambar dan HANYA men-decode data QR.
+    Tidak ada rekonstruksi.
+    
+    Mengembalikan: (data_qr_string, status_sukses)
+    """
+    try:
+        contents = file1.file.read()
+        np_arr = np.frombuffer(contents, np.uint8)
+        img = cv2.imdecode(np_arr, cv2.IMREAD_GRAYSCALE)
+
+        if img is None:
+            return None, False
+
+        decoded_objects = decode(img)
+        if not decoded_objects:
+            return None, False
+
+        # Ambil data dari QR code pertama yang ditemukan
+        qr_data = decoded_objects[0].data.decode('utf-8')
+        return qr_data, True
+
+    except Exception as e:
+        print(f"Error di dalam scan_qr_from_image: {e}")
+        return None, False
+    
+    
+@app.post("/api/v1/scan", tags=["QR Processing"]) # Nama endpoint diubah agar lebih sesuai
+async def scan_endpoint(file: UploadFile = File(...)):
+    """
+    Endpoint yang disederhanakan: Menerima gambar, memindai QR, dan menganalisis data.
+    """
+    print("Menerima request untuk scan...")
+    
+    # Panggil fungsi yang lebih sederhana
+    qr_data, found = scan_qr_from_image(file)
+
+    if not found:
+        print("Gagal menemukan QR code dari gambar.")
+        raise HTTPException(
+            status_code=422,
+            detail="Tidak dapat menemukan atau membaca QR code pada gambar yang diunggah."
+        )
+
+    # Langsung proses qr_data
+    print(f"SUKSES: QR data ditemukan: {qr_data}")
+    try:
+        analysis_data = analyze_qr_string_logic(qr_data)
+        print(f"Hasil analisis: {analysis_data}")
+        return {"success": True, "data": analysis_data}
+    except Exception as e:
+        print(f"Error saat menganalisis data QR: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Terjadi kesalahan saat memproses data QR: {e}"
         )
