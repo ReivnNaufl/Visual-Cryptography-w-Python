@@ -18,16 +18,14 @@ PATTERNS =  [
     np.array([[255, 255], [0, 0]], dtype=np.uint8)   # Horizontal Alternate
 ]
 
-def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[np.ndarray, Tuple[bytes, str]]:
+def split_share(img: np.ndarray) -> Tuple[np.ndarray, Tuple[bytes, str]]:
     _, bw_img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
 
     h, w = bw_img.shape
-    if h % 2 != 0: h -= 1
-    if w % 2 != 0: w -= 1
-    bw_img = bw_img[:h, :w]
+    bw_img = bw_img[:h, :w] 
 
-    out_h = h * block_size
-    out_w = w * block_size
+    out_h = h * 2
+    out_w = w * 2
     share1 = np.zeros((out_h, out_w, 4), dtype=np.uint8)
     share2 = np.zeros((out_h, out_w, 4), dtype=np.uint8)
 
@@ -35,21 +33,20 @@ def split_share(img: np.ndarray, block_size: int = 4) -> Tuple[np.ndarray, Tuple
         for j in range(w):
             pixel = bw_img[i, j]
             index = np.random.randint(0, 6)
-            indexComplement = index + 1 if index % 2 == 0 else index - 1
+            index_complement = index + 1 if index % 2 == 0 else index - 1
 
             p1 = PATTERNS[index]
-            p2 = PATTERNS[indexComplement] if pixel == 0 else p1
+            p2 = PATTERNS[index_complement] if pixel == 0 else p1
 
             for dy in range(2):
                 for dx in range(2):
-                    y = i * block_size + dy * (block_size // 2)
-                    x = j * block_size + dx * (block_size // 2)
+                    y = i * 2 + dy
+                    x = j * 2 + dx
                     alpha1 = 0 if p1[dy, dx] == 0 else 255
                     alpha2 = 0 if p2[dy, dx] == 0 else 255
-                    share1[y:y+(block_size//2), x:x+(block_size//2)] = [0, 0, 0, alpha1]
-                    share2[y:y+(block_size//2), x:x+(block_size//2)] = [0, 0, 0, alpha2]
+                    share1[y, x] = [0, 0, 0, alpha1]
+                    share2[y, x] = [0, 0, 0, alpha2]
 
-    _, encoded_share1 = cv2.imencode('.png', share1)
     _, encoded_share2 = cv2.imencode('.png', share2)
 
     return (

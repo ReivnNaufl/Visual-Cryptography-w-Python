@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware # Penting untuk React
 from pydantic import BaseModel
-
 from app.service.visual_cryptography import *
+from app.route.websocker_route import *
 from app.service.qr_operations import *
 from app.service.aruco_marker import *
 from app.service.firestore import *
@@ -38,6 +38,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(ws_router)
 
 bearer_scheme = HTTPBearer()
 
@@ -96,6 +98,10 @@ async def index(request: Request):
 @app.get("/1", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index2.html", {"request": request})
+
+@app.get("/scan", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("ws_test.html", {"request": request})
 
 @app.post("/upload/")
 async def upload_image(request: Request, file: UploadFile = File(...), name: str = Form(...), userId: str = Form(...)):

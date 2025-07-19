@@ -63,3 +63,23 @@ def get_user_qrs(userId: str, limit: int = 100) -> list:
         })
 
     return qrList
+
+async def get_qr(name: str) -> dict | None:
+    query = (
+        db.collection('QRs')
+        .where(filter=FieldFilter("name", "==", name))
+        .limit(1)
+    )
+
+    docs_stream = query.stream()
+
+    for doc in docs_stream:
+        data = doc.to_dict()
+        qr = {
+            "id": doc.id,
+            "private_share": data.get("private_share"),
+            "metadata": data.get("metadata"),
+        }
+        return qr 
+
+    return None

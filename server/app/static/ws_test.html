@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Scan Share</title>
+  <style>
+    #video { width: 300px; border: 1px solid #ccc; }
+    #result { margin-top: 20px; }
+    #errorRate { margin-top: 10px; font-weight: bold; color: red; }
+  </style>
+</head>
+<body>
+  <h2>Scan Visual Cryptography Share</h2>
+  <input type="text" id="qrNameInput" placeholder="Enter QR name" />
+  <button id="startBtn">Start</button>
+  <br /><br />
+  <video id="video" autoplay playsinline></video>
+
+  <div id="result">
+    <p id="errorRate">Waiting for scan...</p>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const video = document.getElementById("video");
+    const resultDiv = document.getElementById("result");
+    const errorRateText = document.getElementById("errorRate");
+
+    let ws, stream, interval;
+
+    function b64FromVideo(videoEl) {
+      const canvas = document.createElement("canvas");
+      canvas.width = videoEl.videoWidth;
+      canvas.height = videoEl.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/jpeg").split(",")[1]; // only base64 part
+    }
+
+    async function startCamera() {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }
+
+    function showImageFromBase64(b64) {
+      const img = document.createElement("img");
+      img.src = "data:image/png;base64," + b64;
+      img.style.maxWidth = "300px";
+      resultDiv.innerHTML = ""; // clear result div
+      resultDiv.appendChild(img);
+    }
+
+    startBtn.onclick = async () => {
+      const qrName = document.getElementById("qrNameInput").value.trim();
+      if (!qrName) return alert("Please enter a QR name");
+
+      await startCamera();
+
+      ws = new WebSocket(`ws://localhost:8000/ws/scan?qr_name=${encodeURIComponent(qrName)}`);
+
+      ws.onopen = () => {
+        interval = setInterval(() => {
+          const frameB64 = b64FromVideo(video);
+          ws.send(frameB64);
+        }, 10); // send frame every 10ms
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.success) {
+          clearInterval(interval);
+          stopCamera();
+          video.style.display = "none";
+          showImageFromBase64(data.image_b64);
+          errorRateText.textContent = `✅ Success! Error rate: ${data.error_rate.toFixed(2)}%`;
+          errorRateText.style.color = "green";
+        } else {
+          errorRateText.textContent = `❌ Scanning... Error rate: ${data.error_rate.toFixed(2)}%`;
+          errorRateText.style.color = "red";
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error", err);
+      };
+
+      ws.onclose = () => {
+        clearInterval(interval);
+        stopCamera();
+        errorRateText.textContent = "❗ WebSocket closed.";
+        errorRateText.style.color = "gray";
+      };
+    };
+  </script>
+</body>
+</html>

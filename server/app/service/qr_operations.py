@@ -25,15 +25,16 @@ def reconstruct_qr(file1: UploadFile) -> Tuple[np.ndarray, bool]:
     # Reconstruct QR using the decoded data
     qr = qrcode.QRCode(
         version=None,  # Auto size
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        error_correction=qrcode.constants.ERROR_CORRECT_Q,
         box_size=1,  # smallest size, we only need the matrix
         border=0,  # no extra border
     )
     qr.add_data(qr_data)
     qr.make(fit=True)
 
-    # Get binary matrix (2D list of booleans)
-    matrix = qr.get_matrix()  # list of list of bool
+    print("QR Version:", qr.version)  # Version number (1–40)
+    matrix = qr.get_matrix()
+    print("Matrix Size:", len(matrix), "x", len(matrix))  # Always square
 
     # Convert to NumPy array of 0 and 1
     binary_matrix = np.array(matrix, dtype=np.uint8)
@@ -44,5 +45,6 @@ def reconstruct_qr(file1: UploadFile) -> Tuple[np.ndarray, bool]:
     # Optional: scale up for visibility
     scale = 1  # Adjust as needed
     image = cv2.resize(image, (image.shape[1] * scale, image.shape[0] * scale), interpolation=cv2.INTER_NEAREST)
-
+    
     return image, True
+
