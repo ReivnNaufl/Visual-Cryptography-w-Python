@@ -241,7 +241,7 @@ async def delete_qr(qr_id: str, current_user: dict = Depends(verify_firebase_tok
         )
     
 @app.get("/public/search/stores")
-async def public_search_stores(name: str = Query(..., min_length=2)):
+async def public_search_stores(name: str = Query(..., min_length=1)):
     """
     ENDPOINT PUBLIK: Mencari toko berdasarkan awalan nama.
     Pencarian sekarang bersifat CASE-SENSITIVE.
@@ -318,7 +318,7 @@ def scan_qr_from_image(file1: UploadFile) -> Tuple[str, bool]:
         return None, False
     
     
-@app.post("/api/v1/scan", tags=["QR Processing"]) # Nama endpoint diubah agar lebih sesuai
+@app.post("/api/v1/scan", tags=["QR Processing"]) 
 async def scan_endpoint(file: UploadFile = File(...)):
     """
     Endpoint yang disederhanakan: Menerima gambar, memindai QR, dan menganalisis data.

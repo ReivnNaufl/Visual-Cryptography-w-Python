@@ -1,94 +1,116 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
-const CameraFeed = () => {
+const ScanQRPage = () => {
   const videoRef = useRef(null);
+  const navigate = useNavigate();
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  const qrName = params.get("qrName");
+
   const [error, setError] = useState(null);
 
-  // Fungsi untuk memulai kamera
   useEffect(() => {
-    let stream = null; // Variabel untuk menyimpan stream
+    let ws;
+    let stream;
+    let interval;
 
-    const startCamera = async () => {
+    const start = async () => {
       try {
-        // Minta akses ke kamera belakang (environment)
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: 'environment', // 'user' untuk kamera depan
-            width: { ideal: 1920 }, // Resolusi yang diinginkan
-            height: { ideal: 1080 }
-          }
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
         });
+        videoRef.current.srcObject = stream;
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        ws = new WebSocket(`ws://localhost:8000/ws/scan?qr_name=${encodeURIComponent(qrName)}`);
+        ws.onopen = () => {
+          interval = setInterval(() => {
+            const canvas = document.createElement("canvas");
+            canvas.width = videoRef.current.videoWidth;
+            canvas.height = videoRef.current.videoHeight;
+            canvas.getContext("2d").drawImage(videoRef.current, 0, 0);
+            const frameB64 = canvas.toDataURL("image/jpeg", 1).split(",")[1];
+            ws.send(frameB64);
+          }, 200);
+        };
+
+        ws.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          if (data.success) {
+            clearInterval(interval);
+            ws.close();
+            stream.getTracks().forEach((t) => t.stop());
+
+            navigate("/test", { state: { scanResult: data } });
+          }
+        };
+
+        ws.onerror = () => setError("Terjadi kesalahan koneksi WebSocket");
+        ws.onclose = () => clearInterval(interval);
       } catch (err) {
-        console.error("Error accessing the camera: ", err);
-        setError("Tidak dapat mengakses kamera. Pastikan Anda telah memberikan izin dan tidak ada aplikasi lain yang sedang menggunakannya.");
+        setError("Tidak bisa mengakses kamera.");
       }
     };
 
-    startCamera();
+    start();
 
-    // Cleanup function untuk menghentikan stream kamera saat komponen di-unmount
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        console.log("Camera stream stopped.");
-      }
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      if (ws) ws.close();
+      clearInterval(interval);
     };
-  }, []); // Array dependensi kosong agar useEffect hanya berjalan sekali
+  }, [qrName, navigate]);
 
   return (
-    <div className="font-sans bg-gray-800 text-white h-screen flex flex-col">
+    <div className="relative w-full h-screen bg-black overflow-hidden">
+      {/* Video dari kamera */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className="absolute top-0 left-0 w-full h-full object-cover"
+      />
+
       {/* Header */}
-      <header className="bg-gray-700 p-4 relative z-20 flex items-center shadow-md">
-        <button
-          className="text-white text-2xl cursor-pointer absolute left-4"
-          onClick={() => window.history.back()}
-        >
-          &larr;
+      <div className="absolute top-0 left-0 right-0 flex items-center px-4 py-5 z-10">
+        <button onClick={() => navigate(-1)} className="text-white">
+          <ArrowLeft size={24} />
         </button>
-        <h1 className="mx-auto font-semibold text-lg">Scan QR</h1>
-      </header>
+        <h1 className="text-white text-lg font-semibold ml-3">Scan QR</h1>
+      </div>
 
-      {/* Kontainer Utama */}
-      <main className="flex-grow flex justify-center items-center bg-black relative">
-        {error ? (
-          <div className="p-4 text-center text-red-400">{error}</div>
-        ) : (
-          <div className="relative w-full h-full max-w-screen-md flex justify-center items-center">
-            {/* Elemen Video untuk menampilkan feed kamera */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover"
-            />
+      {/* Scanner frame */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="relative w-[70vw] h-[70vw] max-w-xs border-4 border-transparent">
+          {/* Frame Corners */}
+          <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-xl" />
+          <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-xl" />
+          <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-500 rounded-bl-xl" />
+          <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-500 rounded-br-xl" />
 
-            {/* Overlay dengan bingkai biru */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] pointer-events-none">
-              {/* Garis animasi pemindai */}
-              
-              
-              {/* Sudut-sudut biru */}
-              <div className="w-full h-full relative">
-                {/* Top-Left Corner */}
-                <div className="absolute -top-1 -left-1 w-12 h-12 border-t-8 border-l-8 border-blue-500 rounded-tl-3xl"></div>
-                {/* Top-Right Corner */}
-                <div className="absolute -top-1 -right-1 w-12 h-12 border-t-8 border-r-8 border-blue-500 rounded-tr-3xl"></div>
-                {/* Bottom-Left Corner */}
-                <div className="absolute -bottom-1 -left-1 w-12 h-12 border-b-8 border-l-8 border-blue-500 rounded-bl-3xl"></div>
-                {/* Bottom-Right Corner */}
-                <div className="absolute -bottom-1 -right-1 w-12 h-12 border-b-8 border-r-8 border-blue-500 rounded-br-3xl"></div>
-              </div>
-            </div>
+          {/* Garis scan */}
+          {/* <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+            <div className="animate-scan h-1 bg-blue-500" />
+          </div> */}
+        </div>
+      </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="absolute bottom-10 w-full text-center">
+          <div className="inline-block bg-red-800 text-red-200 px-4 py-2 rounded-md text-sm">
+            {error}
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 };
 
-export default CameraFeed;
+export default ScanQRPage;
