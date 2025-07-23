@@ -13,8 +13,8 @@ def add_aruco_marker(image: np.ndarray) -> Tuple[bytes, str, str, str]:
     height, width = image.shape[:2]
     print("aruco width: " , width)
     print("aruco height: " , height)
-    marker_size = height // 5
-    padding = marker_size // 10
+    marker_size = height * 0.12 #12%
+    padding = marker_size * 0.08 #8%
 
     # Generate four unique markers (0 to 3)
     markers = [cv2.aruco.generateImageMarker(aruco_dict, i, marker_size) for i in range(4)]

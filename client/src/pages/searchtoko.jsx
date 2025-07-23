@@ -117,7 +117,7 @@ function ScanQRScreen() {
           disabled={!selectedStore}
           className="w-full py-3 mt-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Lihat Detail Toko
+          Scan Share Toko
         </button>
       </div>
     </div>

@@ -27,11 +27,6 @@ const QrResult = ({ resultData, onReset }) => {
       scheme: `shopeeid://qris/scan?data=${encodeURIComponent(content)}`,
       className: 'bg-orange-500 hover:bg-orange-600',
     },
-    {
-      name: 'OVO',
-      scheme: `ovo://qris/scan?data=${encodeURIComponent(content)}`,
-      className: 'bg-purple-600 hover:bg-purple-700',
-    },
   ];
 
   const handlePayment = (urlScheme) => {
