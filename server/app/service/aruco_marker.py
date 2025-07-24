@@ -11,10 +11,8 @@ height = 512
 def add_aruco_marker(image: np.ndarray) -> Tuple[bytes, str, str, str]:
     # Get original image dimensions
     height, width = image.shape[:2]
-    print("aruco width: " , width)
-    print("aruco height: " , height)
-    marker_size = height * 0.12 #12%
-    padding = marker_size * 0.08 #8%
+    marker_size = height // 5
+    padding = marker_size // 10
 
     # Generate four unique markers (0 to 3)
     markers = [cv2.aruco.generateImageMarker(aruco_dict, i, marker_size) for i in range(4)]
@@ -43,7 +41,7 @@ def add_aruco_marker(image: np.ndarray) -> Tuple[bytes, str, str, str]:
     # Paste the markers
     for marker, (x, y) in zip(markers, marker_positions):
         canvas[y:y + marker_size, x:x + marker_size] = marker
-
+        
     scale_factor = 1080 //\
          width
     resized = cv2.resize(canvas, dsize=None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_NEAREST)

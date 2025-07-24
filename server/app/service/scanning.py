@@ -8,6 +8,23 @@ from pyzbar.pyzbar import decode
 
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 aruco_params = cv2.aruco.DetectorParameters()
+aruco_params.adaptiveThreshWinSizeMin = 3
+aruco_params.adaptiveThreshWinSizeMax = 23
+aruco_params.adaptiveThreshWinSizeStep = 10
+
+aruco_params.minMarkerPerimeterRate = 0.01     # More tolerant of small markers
+aruco_params.maxMarkerPerimeterRate = 4.0      # More tolerant of large markers
+
+aruco_params.polygonalApproxAccuracyRate = 0.03  # Try between 0.01–0.05 for warping
+aruco_params.minCornerDistanceRate = 0.02        # Lower if markers are close
+
+aruco_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+aruco_params.cornerRefinementWinSize = 5
+aruco_params.cornerRefinementMaxIterations = 50
+aruco_params.cornerRefinementMinAccuracy = 0.01
+
+aruco_params.errorCorrectionRate = 0.6
+
 detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
 qr_detector = cv2.QRCodeDetector()
 
@@ -117,7 +134,7 @@ def scan_share(frame: np.ndarray, share2: np.ndarray, width: int, marker_w: int)
     else:
         frame_gray = frame.copy()
 
-    detect_size = 720
+    detect_size = 1920
     preview = cv2.resize(frame_gray, (detect_size, detect_size))
     scale_x = frame.shape[1] / detect_size
     scale_y = frame.shape[0] / detect_size
